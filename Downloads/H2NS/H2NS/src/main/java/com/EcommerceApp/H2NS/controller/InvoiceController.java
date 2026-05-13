@@ -1,6 +1,5 @@
 package com.EcommerceApp.H2NS.controller;
 
-
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -20,10 +19,6 @@ public class InvoiceController {
         this.invoiceService = invoiceService;
     }
 
-    /**
-     * عرض فاتورة معينة
-     * GET /api/invoices/order/{orderId}
-     */
     @GetMapping("/order/{orderId}")
     public ResponseEntity<?> getInvoiceByOrderId(@PathVariable Long orderId) {
         try {

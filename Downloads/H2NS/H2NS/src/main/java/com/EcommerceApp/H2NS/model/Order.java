@@ -46,9 +46,6 @@ public class Order {
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal totalAmount;
    
-    /**
-     * عناصر الطلب
-     */
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<OrderItem> items = new ArrayList<>();
    
@@ -70,25 +67,19 @@ public class Order {
     }
    
     public enum OrderStatus {
-        PENDING,      // قيد الانتظار (السلة تحولت لطلب)
-        CONFIRMED,    // مؤكد (بعد الدفع)
-        PROCESSING,   // قيد المعالجة
-        SHIPPED,      // تم الشحن
-        DELIVERED,    // تم التسليم
-        CANCELLED     // ملغي
+        PENDING,      // cart is cheecked out but not paid yet 
+        CONFIRMED,    // after purshase 
+        PROCESSING,   
+        SHIPPED,     
+        DELIVERED,   
+        CANCELLED     
     }
    
-    /**
-     * إضافة عنصر للطلب
-     */
     public void addItem(OrderItem item) {
         items.add(item);
         item.setOrder(this);
     }
    
-    /**
-     * التحقق من إمكانية تأكيد الطلب
-     */
     public boolean canBeConfirmed() {
         return status == OrderStatus.PENDING;
     }

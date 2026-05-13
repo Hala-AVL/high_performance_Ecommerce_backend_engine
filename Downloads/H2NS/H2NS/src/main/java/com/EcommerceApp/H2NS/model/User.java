@@ -1,5 +1,6 @@
 package com.EcommerceApp.H2NS.model;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -17,7 +18,7 @@ import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.NoArgsConstructor  ;
 
 @Entity
 @Table(name = "users")
@@ -35,11 +36,15 @@ public class User {
     private String email;
    
     @Column(nullable = false)
-    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY) // 👈 كلمة السر تظهر فقط عند الإرسال، لا عند الاستلام
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY) 
+    // password will appaer in request but not in response 
     private String password;
    
     @Column(nullable = false)
     private String name;
+
+    @Column(nullable = false) 
+    private BigDecimal balance = new BigDecimal("1000.00") ; 
    
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

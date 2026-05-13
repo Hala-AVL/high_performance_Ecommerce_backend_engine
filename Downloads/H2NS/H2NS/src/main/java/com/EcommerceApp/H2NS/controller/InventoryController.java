@@ -25,19 +25,11 @@ public class InventoryController {
         this.inventoryService = inventoryService;
     }
 
-    /**
-     * عرض كل المخزون
-     * GET /api/inventory
-     */
     @GetMapping
     public ResponseEntity<List<Product>> getAllInventory() {
         return ResponseEntity.ok(inventoryService.getAllInventory());
     }
 
-    /**
-     * عرض مخزون منتج محدد
-     * GET /api/inventory/{productId}
-     */
     @GetMapping("/{productId}")
     public ResponseEntity<?> getProductStock(@PathVariable Long productId) {
         try {
@@ -48,10 +40,7 @@ public class InventoryController {
         }
     }
 
-    /**
-     * ⚠️ تحديث المخزون (إضافة كمية) - بدون حماية
-     * PUT /api/inventory/{productId}/add
-     */
+     //without protection from race condition 
     @PutMapping("/{productId}/add")
     public ResponseEntity<?> addStock(@PathVariable Long productId, @RequestBody Map<String, Integer> request) {
         try {
@@ -62,10 +51,7 @@ public class InventoryController {
         }
     }
 
-    /**
-     * ⚠️ خصم من المخزون - بدون حماية
-     * PUT /api/inventory/{productId}/deduct
-     */
+    //without protection from race condition 
     @PutMapping("/{productId}/deduct")
     public ResponseEntity<?> deductStock(@PathVariable Long productId, @RequestBody Map<String, Integer> request) {
         try {
@@ -76,10 +62,6 @@ public class InventoryController {
         }
     }
 
-    /**
-     * المنتجات القليلة المخزون
-     * GET /api/inventory/low-stock?threshold=5
-     */
     @GetMapping("/low-stock")
     public ResponseEntity<List<Product>> getLowStock(@RequestParam(defaultValue = "5") Integer threshold) {
         return ResponseEntity.ok(inventoryService.getLowStockProducts(threshold));

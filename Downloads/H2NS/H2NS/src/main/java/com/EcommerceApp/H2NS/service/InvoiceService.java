@@ -1,6 +1,5 @@
 package com.EcommerceApp.H2NS.service;
 
-
 import org.springframework.stereotype.Service;
 
 import com.EcommerceApp.H2NS.model.Invoice;
@@ -12,46 +11,37 @@ import lombok.extern.slf4j.Slf4j;
 @Service
 @Slf4j
 public class InvoiceService {
-   
+
     private final InvoiceRepository invoiceRepository;
-   
+
     public InvoiceService(InvoiceRepository invoiceRepository) {
         this.invoiceRepository = invoiceRepository;
     }
-   
-    /**
-     * ⚠️ BEFORE: إنشاء فاتورة متزامنة (في نفس المسار)
-     *
-     * المشكلة: المستخدم بيستنى لما الفاتورة تتولد
-     * ده اللي رح نحسنه في المرحلة التانية بـ @Async
-     */
+    //for async non-func req 
+
     public Invoice generateInvoice(Order order) {
-        log.info("🧾 إنشاء فاتورة للطلب رقم {} (متزامن)", order.getId());
-       
-        // ⚠️ محاكاة عملية بطيئة - المستخدم مستني
+        log.info("Generating invoice for order: {}", order.getId());
+        //simulation for delay in generating invoice 
         try {
-            Thread.sleep(500); // نص ثانية تأخير
+            Thread.sleep(500);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
-       
+
         Invoice invoice = new Invoice();
         invoice.setOrder(order);
         invoice.setInvoiceNumber(Invoice.generateInvoiceNumber(order.getId()));
         invoice.setTotalAmount(order.getTotalAmount());
         invoice.setStatus(Invoice.InvoiceStatus.GENERATED);
-       
+
         Invoice savedInvoice = invoiceRepository.save(invoice);
-        log.info("✅ تم إنشاء الفاتورة: {}", savedInvoice.getInvoiceNumber());
-       
+        log.info(" Invoice generated Successfully: {}", savedInvoice.getInvoiceNumber());
+
         return savedInvoice;
     }
-   
-    /**
-     * جلب فاتورة للطلب
-     */
+
     public Invoice getInvoiceByOrderId(Long orderId) {
         return invoiceRepository.findByOrderId(orderId)
-                .orElseThrow(() -> new RuntimeException("الفاتورة غير موجودة"));
+                .orElseThrow(() -> new RuntimeException("Invoice not found for order ID: " + orderId));
     }
 }

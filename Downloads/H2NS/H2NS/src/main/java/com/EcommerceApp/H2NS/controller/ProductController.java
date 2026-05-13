@@ -1,6 +1,5 @@
 package com.EcommerceApp.H2NS.controller;
 
-
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
@@ -28,10 +27,6 @@ public class ProductController {
         this.productService = productService;
     }
 
-    /**
-     * إضافة منتج جديد
-     * POST /api/products
-     */
     @PostMapping
     public ResponseEntity<?> addProduct(@RequestBody Map<String, Object> request) {
         Product product = productService.addProduct(
@@ -43,19 +38,11 @@ public class ProductController {
         return ResponseEntity.status(HttpStatus.CREATED).body(product);
     }
 
-    /**
-     * عرض كل المنتجات
-     * GET /api/products
-     */
     @GetMapping
     public ResponseEntity<List<Product>> getAllProducts() {
         return ResponseEntity.ok(productService.getAllProducts());
     }
 
-    /**
-     * عرض منتج محدد
-     * GET /api/products/{id}
-     */
     @GetMapping("/{id}")
     public ResponseEntity<?> getProduct(@PathVariable Long id) {
         try {
@@ -66,10 +53,7 @@ public class ProductController {
         }
     }
 
-    /**
-     * عرض المنتجات القليلة المخزون
-     * GET /api/products/low-stock?threshold=5
-     */
+    // GET /api/products/low-stock?threshold=5
     @GetMapping("/low-stock")
     public ResponseEntity<List<Product>> getLowStockProducts(@RequestParam(defaultValue = "5") Integer threshold) {
         return ResponseEntity.ok(productService.getLowStockProducts(threshold));

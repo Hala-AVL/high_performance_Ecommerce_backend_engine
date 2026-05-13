@@ -1,6 +1,5 @@
 package com.EcommerceApp.H2NS.service;
 
-
 import java.math.BigDecimal;
 import java.util.List;
 
@@ -14,16 +13,13 @@ import lombok.extern.slf4j.Slf4j;
 @Service
 @Slf4j
 public class ProductService {
-   
+
     private final ProductRepository productRepository;
-   
+
     public ProductService(ProductRepository productRepository) {
         this.productRepository = productRepository;
     }
-   
-    /**
-     * إضافة منتج جديد
-     */
+
     public Product addProduct(String name, String description, BigDecimal price, Integer stockQuantity) {
         Product product = new Product();
         product.setName(name);
@@ -31,30 +27,21 @@ public class ProductService {
         product.setPrice(price);
         product.setStockQuantity(stockQuantity);
         product.setActive(true);
-       
+
         Product savedProduct = productRepository.save(product);
-        log.info("📦 تم إضافة المنتج: {} (المخزون: {})", name, stockQuantity);
+        log.info(" Product added successfully: {} (Stock: {})", name, stockQuantity);
         return savedProduct;
     }
-   
-    /**
-     * عرض كل المنتجات
-     */
+
     public List<Product> getAllProducts() {
         return productRepository.findByActiveTrue();
     }
-   
-    /**
-     * عرض منتج محدد
-     */
+
     public Product getProductById(Long productId) {
         return productRepository.findById(productId)
-                .orElseThrow(() -> new RuntimeException("المنتج غير موجود"));
+                .orElseThrow(() -> new RuntimeException(" Product Not Fount with ID : " + productId));
     }
-   
-    /**
-     * عرض المنتجات اللي قاربت على النفاذ
-     */
+
     public List<Product> getLowStockProducts(Integer threshold) {
         return productRepository.findByStockQuantityLessThanEqual(threshold);
     }

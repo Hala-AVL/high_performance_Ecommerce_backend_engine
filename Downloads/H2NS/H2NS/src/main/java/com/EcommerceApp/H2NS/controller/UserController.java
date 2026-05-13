@@ -1,5 +1,6 @@
 package com.EcommerceApp.H2NS.controller;
 
+import java.math.BigDecimal;
 import java.util.Map;
 
 import org.springframework.http.HttpStatus;
@@ -24,10 +25,6 @@ public class UserController {
         this.userService = userService;
     }
 
-    /**
-     * تسجيل مستخدم جديد
-     * POST /api/users/register
-     */
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody Map<String, String> request) {
         try {
@@ -42,10 +39,6 @@ public class UserController {
         }
     }
 
-    /**
-     * تسجيل الدخول
-     * POST /api/users/login
-     */
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody Map<String, String> request) {
         try {
@@ -59,10 +52,6 @@ public class UserController {
         }
     }
 
-    /**
-     * عرض مستخدم
-     * GET /api/users/{id}
-     */
     @GetMapping("/{id}")
     public ResponseEntity<?> getUser(@PathVariable Long id) {
         try {
@@ -70,6 +59,31 @@ public class UserController {
             return ResponseEntity.ok(user);
         } catch (RuntimeException e) {
             return ResponseEntity.notFound().build();
+        }
+    }
+
+    @GetMapping("/{id}/balance")
+    public ResponseEntity<?> getBalance(@PathVariable Long id) {
+        try {
+            BigDecimal balance = userService.getBalance(id);
+            return ResponseEntity.ok(Map.of("userId", id, "balance", balance));
+        } catch (RuntimeException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @PostMapping("/{id}/add-balance")
+    public ResponseEntity<?> addBalance(@PathVariable Long id, @RequestBody Map<String, BigDecimal> request) {
+        try {
+            userService.addBalance(id, request.get("amount"));
+            BigDecimal newBalance = userService.getBalance(id);
+            return ResponseEntity.ok(Map.of(
+                    "message", "added balance successfully",
+                    "userId", id,
+                    "newBalance", newBalance
+            ));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
 }

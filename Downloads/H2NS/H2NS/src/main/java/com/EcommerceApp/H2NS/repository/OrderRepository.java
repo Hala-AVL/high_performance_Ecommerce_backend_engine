@@ -13,10 +13,7 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
    
     List<Order> findByUserId(Long userId);
    
-    /**
-     * للمتطلب 4: جرد المبيعات اليومية
-     * نجيب كل الطلبات المؤكدة في تاريخ معين
-     */
+    //for 4th non-func requirment - order history with date range and status 
     List<Order> findByStatusAndCreatedAtBetween(
             Order.OrderStatus status,
             LocalDateTime start,

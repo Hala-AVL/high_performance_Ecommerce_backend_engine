@@ -1,6 +1,5 @@
 package com.EcommerceApp.H2NS.service;
 
-
 import java.math.BigDecimal;
 
 import org.springframework.stereotype.Service;
@@ -11,7 +10,6 @@ import com.EcommerceApp.H2NS.model.Order;
 import com.EcommerceApp.H2NS.model.OrderItem;
 import com.EcommerceApp.H2NS.model.Product;
 import com.EcommerceApp.H2NS.repository.CartRepository;
-import com.EcommerceApp.H2NS.repository.OrderItemRepository;
 import com.EcommerceApp.H2NS.repository.OrderRepository;
 import com.EcommerceApp.H2NS.repository.ProductRepository;
 
@@ -20,111 +18,83 @@ import lombok.extern.slf4j.Slf4j;
 @Service
 @Slf4j
 public class OrderService {
-   
+
     private final OrderRepository orderRepository;
     private final ProductRepository productRepository;
     private final CartRepository cartRepository;
-    private final OrderItemRepository orderItemRepository;
-   
+    private final UserService userService;
+    private final InvoiceService invoiceService;
+
     public OrderService(OrderRepository orderRepository,
-                        ProductRepository productRepository,
-                        CartRepository cartRepository,
-                        OrderItemRepository orderItemRepository) {
+            ProductRepository productRepository,
+            CartRepository cartRepository,
+            UserService userService,
+            InvoiceService invoiceService) {
         this.orderRepository = orderRepository;
         this.productRepository = productRepository;
         this.cartRepository = cartRepository;
-        this.orderItemRepository = orderItemRepository;
+        this.userService = userService;
+        this.invoiceService = invoiceService;
     }
-   
-    /**
-     * ⚠️ النسخة الأولية - BEFORE
-     *
-     * المشاكل الموجودة عشان تظهر في JMeter:
-     * 1. مفيش @Transactional - العملية مش Atomic
-     * 2. مفيش قفل - ممكن Race Condition
-     * 3. خصم المخزون وتسجيل الطلب منفصلين
-     *
-     * نتائج JMeter المتوقعة:
-     * - المخزون ينقص لأرقام سالبة
-     * - طلبات بدون خصم مخزون
-     * - خصم مخزون بدون طلب
-     */
+
+    // @Transactional  //for Atomoicity 
     public Order placeOrder(Long userId) {
-        log.warn("⚠️ BEFORE: تنفيذ placeOrder بدون حماية");
-       
-        // 1. جلب السلة
+        log.info(" Beginning order placement for user: {}", userId);
+
         Cart cart = cartRepository.findByUserId(userId)
-                .orElseThrow(() -> new RuntimeException("السلة فارغة"));
-       
+                .orElseThrow(() -> new RuntimeException("Cart not found for user: " + userId));
+
         if (cart.getItems().isEmpty()) {
-            throw new RuntimeException("السلة فارغة");
+            throw new RuntimeException("Cart is empty for user: " + userId);
         }
-       
-        // 2. إنشاء الطلب
+
+        BigDecimal totalAmount = cart.getTotalPrice();
+
+        userService.deductBalance(userId, totalAmount);
+
         Order order = new Order();
         order.setUser(cart.getUser());
-        order.setStatus(Order.OrderStatus.PENDING);
-       
-        BigDecimal total = BigDecimal.ZERO;
-       
-        // 3. معالجة كل منتج - ⚠️ بدون حماية من التضارب
+        order.setStatus(Order.OrderStatus.PENDING); //stay pending until the payment is done 
+        order.setTotalAmount(totalAmount);
+
         for (CartItem cartItem : cart.getItems()) {
-            Product product = productRepository.findById(cartItem.getProduct().getId())
-                    .orElseThrow(() -> new RuntimeException("المنتج غير موجود"));
-           
-            // ⚠️ فحص المخزون بدون قفل
-            if (product.getStockQuantity() >= cartItem.getQuantity()) {
-                int oldStock = product.getStockQuantity();
-                int newStock = oldStock - cartItem.getQuantity();
-                product.setStockQuantity(newStock);
-               
-                // ⚠️ حفظ مباشر بدون Transaction
-                productRepository.save(product);
-               
-                // إنشاء OrderItem
-                OrderItem orderItem = new OrderItem();
-                orderItem.setProduct(product);
-                orderItem.setQuantity(cartItem.getQuantity());
-                orderItem.setPriceAtPurchase(product.getPrice());
-                orderItem.setOrder(order);
-                order.getItems().add(orderItem);
-               
-                total = total.add(product.getPrice().multiply(BigDecimal.valueOf(cartItem.getQuantity())));
-               
-                log.info("📝 خصم {} من المنتج {} ({} -> {})",
-                        cartItem.getQuantity(), product.getName(), oldStock, newStock);
-            } else {
-                log.warn("❌ مخزون غير كافٍ: {}", product.getName());
+            Product product = cartItem.getProduct();
+
+            if (product.getStockQuantity() < cartItem.getQuantity()) {
+                // if stock is not enough refund the user 
+                userService.addBalance(userId, totalAmount);
+                throw new RuntimeException("Stock is not enough for product: " + product.getName());
             }
+
+            product.setStockQuantity(product.getStockQuantity() - cartItem.getQuantity());
+            productRepository.save(product);
+
+            OrderItem orderItem = new OrderItem();
+            orderItem.setProduct(product);
+            orderItem.setQuantity(cartItem.getQuantity());
+            orderItem.setPriceAtPurchase(product.getPrice());
+            orderItem.setOrder(order);
+            order.getItems().add(orderItem);
         }
-       
-        // 4. تحديث الطلب
-        order.setTotalAmount(total);
+
         order.setStatus(Order.OrderStatus.CONFIRMED);
-       
-        // ⚠️ حفظ الطلب بدون Transaction مع خصم المخزون
         Order savedOrder = orderRepository.save(order);
-       
-        // 5. تفريغ السلة
+
         cart.getItems().clear();
         cartRepository.save(cart);
-       
-        log.info("🎉 تم إنشاء الطلب رقم {} - الإجمالي: {}", savedOrder.getId(), total);
+
+        invoiceService.generateInvoice(savedOrder);
+
+        log.info(" Order placed successfully: {} (Total: {})", savedOrder.getId(), totalAmount, userId);
         return savedOrder;
     }
-   
-    /**
-     * عرض طلبات المستخدم
-     */
+
     public java.util.List<Order> getUserOrders(Long userId) {
         return orderRepository.findByUserId(userId);
     }
-   
-    /**
-     * عرض تفاصيل طلب
-     */
+
     public Order getOrderById(Long orderId) {
         return orderRepository.findById(orderId)
-                .orElseThrow(() -> new RuntimeException("الطلب غير موجود"));
+                .orElseThrow(() -> new RuntimeException("Order not found"));
     }
 }

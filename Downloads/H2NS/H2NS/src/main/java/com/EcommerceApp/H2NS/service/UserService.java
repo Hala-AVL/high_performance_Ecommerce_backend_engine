@@ -1,5 +1,6 @@
 package com.EcommerceApp.H2NS.service;
 
+import java.math.BigDecimal;
 
 import org.springframework.stereotype.Service;
 
@@ -13,61 +14,83 @@ import lombok.extern.slf4j.Slf4j;
 @Service
 @Slf4j
 public class UserService {
-   
+
     private final UserRepository userRepository;
     private final CartRepository cartRepository;
-   
+
     public UserService(UserRepository userRepository, CartRepository cartRepository) {
         this.userRepository = userRepository;
         this.cartRepository = cartRepository;
     }
-   
-    /**
-     * تسجيل مستخدم جديد
-     * Before: بدون أي حماية من التضارب
-     */
+
+    // without conncurrent Access & Data Integrity 
     public User register(String email, String password, String name) {
         if (userRepository.existsByEmail(email)) {
-            throw new RuntimeException("البريد الإلكتروني مستخدم بالفعل");
+            throw new RuntimeException("Warning : Email already in use ");
         }
-       
+
         User user = new User();
         user.setEmail(email);
         user.setPassword(password);
         user.setName(name);
         user.setRole(User.UserRole.CUSTOMER);
-       
+
         User savedUser = userRepository.save(user);
-       
-        // إنشاء سلة تلقائياً للمستخدم الجديد
+
+        // create empty cart for the user 
         Cart cart = new Cart();
         cart.setUser(savedUser);
         cartRepository.save(cart);
-       
-        log.info("✅ تم تسجيل المستخدم: {}", email);
+
+        log.info("user registered successfully : {}", email);
         return savedUser;
     }
-   
-    /**
-     * تسجيل الدخول
-     */
+
     public User login(String email, String password) {
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("المستخدم غير موجود"));
-       
+                .orElseThrow(() -> new RuntimeException("User Not Found with email:" + email));
+
         if (!user.getPassword().equals(password)) {
-            throw new RuntimeException("كلمة المرور غير صحيحة");
+            throw new RuntimeException("Invalid password for user: " + email);
         }
-       
-        log.info("🔑 تم تسجيل دخول المستخدم: {}", email);
+
+        log.info(" User logged in successfully: {}", email);
         return user;
     }
-   
-    /**
-     * جلب مستخدم بالـ ID
-     */
+
     public User getUserById(Long userId) {
         return userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("المستخدم غير موجود"));
+                .orElseThrow(() -> new RuntimeException("User Not Found with ID: " + userId));
     }
+
+    public BigDecimal getBalance(Long userId) {
+        User user = getUserById(userId);
+        return user.getBalance();
+    }
+
+    // @Transactional
+    public void deductBalance(Long userId, BigDecimal amount) {
+        User user = getUserById(userId);
+
+        if (user.getBalance().compareTo(amount) < 0) {
+            throw new RuntimeException("balance is not sufficient, available: " + user.getBalance() + ", required: " + amount);
+        }
+
+        user.setBalance(user.getBalance().subtract(amount));
+        userRepository.save(user);
+
+        log.info(" balance deducted successfully from user {}: remaining balance: {}",
+                userId, user.getBalance());
+    }
+
+    // @Transactional
+    public void addBalance(Long userId, BigDecimal amount) {
+        User user = getUserById(userId);
+        user.setBalance(user.getBalance().add(amount));
+        userRepository.save(user);
+
+        log.info(" balance added successfully to user {}: new balance: {}",
+                userId, user.getBalance());
+    }
+
 }

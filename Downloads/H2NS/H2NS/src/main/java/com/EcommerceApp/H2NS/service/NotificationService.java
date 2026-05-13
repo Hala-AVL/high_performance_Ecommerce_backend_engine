@@ -9,33 +9,23 @@ import lombok.extern.slf4j.Slf4j;
 @Service
 @Slf4j
 public class NotificationService {
-   
-    /**
-     * ⚠️ BEFORE: إرسال إشعار متزامن
-     *
-     * المشكلة: المستخدم بينتظر الإشعار ما يتبعت
-     * في المرحلة التانية: حنحولها لـ @Async
-     */
+
+    //for async non-func req 
     public void sendOrderConfirmation(Order order) {
-        log.info("📧 إرسال إشعار تأكيد الطلب رقم {} (متزامن)", order.getId());
-       
-        // ⚠️ محاكاة عملية بطيئة
+        log.info(" Sending order confirmation notification for order ID {}: (Synchronous)", order.getId());
+        //simulation for delay in notifaication sending 
         try {
-            Thread.sleep(1000); // ثانية كاملة تأخير
+            Thread.sleep(1000);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
-       
-        log.info("✅ تم إرسال إشعار التأكيد للطلب رقم {}", order.getId());
+
+        log.info(" Order confirmation notification sent for order ID {}", order.getId());
     }
-   
-    /**
-     * إرسال إشعار عام
-     */
+
     public void sendNotification(String email, String message) {
-        log.info("📬 إرسال إشعار إلى {}: {}", email, message);
-       
-        // محاكاة إرسال
+        log.info(" Sending notification to {}: {}", email, message);
+        //simulation for delay in notifaication sending 
         try {
             Thread.sleep(300);
         } catch (InterruptedException e) {
