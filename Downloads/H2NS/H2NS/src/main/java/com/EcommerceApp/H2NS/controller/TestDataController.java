@@ -23,6 +23,7 @@ public class TestDataController {
     private final UserService userService;
     private final ProductService productService;
     private final CartService cartService;
+    private static Long sharedProductId = null;
 
     public TestDataController(UserService userService,
             ProductService productService,
@@ -81,21 +82,23 @@ public class TestDataController {
                 "123456",
                 "test user with cart"
         );
-
-        Product product = productService.addProduct(
-                "test product " + user.getId(),
-                "description of the product",
-                new BigDecimal("100.00"),
-                100 // large quantity for testing
-        );
-
-        cartService.addToCart(user.getId(), product.getId(), 1);
+        if (sharedProductId == null) {
+            Product sharedProduct = productService.addProduct(
+                    " PRODUCT FOR RACE CONDITION TEST ",
+                    "This product will be shared by all users to cause race condition",
+                    new BigDecimal("100.00"),
+                    50 
+            );
+            sharedProductId = sharedProduct.getId();
+        }
+        cartService.addToCart(user.getId(), sharedProductId, 1);
 
         return ResponseEntity.ok(Map.of(
                 "userId", user.getId(),
-                "productId", product.getId(),
-                "productStock", product.getStockQuantity(),
+                "productId", sharedProductId,
+                "productStock", "SHARED (50 total for all users)",
                 "message", "ready for testing at: /api/orders/place/" + user.getId()
         ));
     }
+
 }

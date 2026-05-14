@@ -3,6 +3,7 @@ package com.EcommerceApp.H2NS.service;
 import java.math.BigDecimal;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.EcommerceApp.H2NS.model.Cart;
 import com.EcommerceApp.H2NS.model.User;
@@ -68,7 +69,7 @@ public class UserService {
         return user.getBalance();
     }
 
-    // @Transactional
+    @Transactional
     public void deductBalance(Long userId, BigDecimal amount) {
         User user = getUserById(userId);
 
@@ -83,7 +84,7 @@ public class UserService {
                 userId, user.getBalance());
     }
 
-    // @Transactional
+    @Transactional
     public void addBalance(Long userId, BigDecimal amount) {
         User user = getUserById(userId);
         user.setBalance(user.getBalance().add(amount));
